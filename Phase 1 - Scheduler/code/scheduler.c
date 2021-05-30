@@ -56,15 +56,17 @@ void deleteFinishedProcesses() {  //garbage collector
 void processToFile(struct PCB *processe) {
     if (processe->state == -1) {  //finished
         int time = getClk();
-        int waitingTime = time - processe->startTime - (processe->totalTime - processe->remainingTime);
-        int turnArroundTime = processe->endTime - processe->startTime;
+        int waitingTime = time - processe->arrivalTime - (processe->totalTime - processe->remainingTime);
+        int turnArroundTime = processe->endTime - processe->arrivalTime;
         float weightedTurnArroundTime = (float)turnArroundTime / processe->totalTime;
         printf("At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f", time, processe->num, processe->arrivalTime, processe->totalTime, processe->remainingTime, waitingTime, turnArroundTime, weightedTurnArroundTime);
     } else if (processe->state == 0) {  //stopped
         int time = getClk();
+        int waitingTime = time - processe->arrivalTime - (processe->totalTime - processe->remainingTime);
         printf("At time %d process %d stopped arr %d total %d remain %d wait %d", time, processe->num, processe->arrivalTime, processe->totalTime, processe->remainingTime, waitingTime);
     } else {  //started
         int time = getClk();
+        int waitingTime = time - processe->arrivalTime - (processe->totalTime - processe->remainingTime);
         printf("At time %d process %d started arr %d total %d remain %d wait %d", time, processe->num, processe->arrivalTime, processe->totalTime, processe->remainingTime, waitingTime);
     }
 }
