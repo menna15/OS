@@ -1,4 +1,8 @@
-#include "headers.h"
+#include "stdio.h"
+int clk = 0;
+int getClk() {
+    return clk;
+}
 //linked list implemention as the process come in different time and process could be removed unlike array
 struct PCB {
     int id;
@@ -103,7 +107,35 @@ void processToFile(struct PCB *processe) {
     }
     fclose(schedulerLog);
 }
-struct PCB *getProperSRTN() {  //for saad
+void processGeneratorFunctionality() {
+    struct PCB process[5];
+    process[0].arrivalTime = 0;
+    process[0].totalTime = 6;
+
+    process[1].arrivalTime = 1;
+    process[1].totalTime = 2;
+
+    process[2].arrivalTime = 3;
+    process[2].totalTime = 4;
+
+    process[3].arrivalTime = 9;
+    process[3].totalTime = 3;
+
+    process[4].arrivalTime = 12;
+    process[4].totalTime = 5;
+    for (int i = 0; i < 5; i++) {
+        if (process[i].arrivalTime + 1 == getClk()) {
+            addProcess(process[i]);
+            count++;
+        }
+    }
+    if (count == 5) {
+        thereIsProcess = 0;
+    }
+}
+struct PCB *getProperElement() {
+    //👀 Put your implemetation here
+    //=======================================================================
     struct PCB *currentProcess = root;
     struct PCB *result = currentProcess;
     while (currentProcess != NULL) {
@@ -113,37 +145,21 @@ struct PCB *getProperSRTN() {  //for saad
         currentProcess = currentProcess->nextProcess;
     }
     return result;
-}
-struct PCB *getProperSJF() {  //for saad
-    struct PCB *currentProcess = root;
-    struct PCB *result = currentProcess;
-    while (currentProcess != NULL) {
-        if (currentProcess->totalTime < result->totalTime) {
-            result = currentProcess;
-        }
-        currentProcess = currentProcess->nextProcess;
-    }
-    return result;
+    //=======================================================================
 }
 int main(int argc, char *argv[]) {
-    initClk();
-
-    //TODO: get the data proberly
-    //=========================================
-    struct PCB process;
-    process.id = 955;
-    process.arrivalTime = 1;
-    process.totalTime = 3;
-    process.priority = 5;
-    addProcess(process);
-    //=========================================
-
-    //TODO: implement the scheduler.
-    //=========================================
-    //4.Shortest Remaining Time Next (SRTN)
-    struct PCB *runningProcess = getNextSRTN();
-    runningProcess->state = 1;
-    while (true) {
+    FILE *schedulerLog = fopen("scheduler.log", "w");
+    fprintf(schedulerLog, "");
+    fclose(schedulerLog);
+    processGeneratorFunctionality();
+    struct PCB *runningProcess = getProperElement();
+    if (runningProcess != NULL) {
+        runningProcess->state = 1;
+    }
+    //main loop
+    while (thereIsProcess == 1 || root != NULL) {
+        clk++;
+        processGeneratorFunctionality();
         int time = getClk();
         struct PCB *tempProcess = getProperElement();
         if (runningProcess != tempProcess) {
@@ -167,11 +183,5 @@ int main(int argc, char *argv[]) {
             processToFile(runningProcess);
         }
         deleteFinishedProcesses();  //garbage collector
-        while (time == getClk()) {
-        }
     }
-    //=========================================
-
-    //TODO: upon termination release the clock resources.
-    destroyClk(true);
 }
