@@ -12,27 +12,44 @@
 #include <signal.h>
 #include <string.h> // for strtok function.
 
-
 typedef short bool;
 #define true 1
 #define false 0
 
 #define SHKEY 300
 
-/* struct holds the process informations */
-struct process_information {
+//************************//
+struct process_information {        /* struct holds the process informations */
     int id;
     int totalTime;
     int arrivalTime;
     int remainingTime;
     int runTime;
-    int priority;    //(low)10 >= priorit >= (high)0
-    int endTime;     // 0 --> not finished.
-    int state;       //-1 --> finished, 0 --> stopped, 1 --> running.
-    //* waiting time = endTime-arrivalTime - totalTime
-    //* running time = getClk() - arrivalTime
-};
+    int priority;    /*(low)10 >= priorit >= (high)0 */
+    int endTime;     /* 0 --> not finished. */
+    int state;       /* -1 --> finished, 0 --> stopped, 1 --> running.*/
 
+    /* waiting time = endTime-arrivalTime - totalTime
+    running time = getClk() - arrivalTime */
+};
+//************************//
+struct algorithmBuffer                 
+{                                  /*for sending the algorithim number and the quantum in case of RR */ 
+    long mtype;
+    int algorithm;
+    int quantum; 
+};
+//************************//
+struct processBuffer                /*for sending the processes at specific instance of time 
+                                    and all_sent is indicator if this the last time the scheduler will receive processes
+                                    processBuffer.num_of_processes --> number of process that arrived at the current time*/
+{
+    long mtype;
+    int num_of_processes;
+    struct process_information process;
+    bool all_sent;
+    
+};
 ///==============================
 //don't mess with this variable//
 int *shmaddr; //
