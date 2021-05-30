@@ -114,6 +114,17 @@ struct PCB *getProperSRTN() {  //for saad
     }
     return result;
 }
+struct PCB *getProperSJF() {  //for saad
+    struct PCB *currentProcess = root;
+    struct PCB *result = currentProcess;
+    while (currentProcess != NULL) {
+        if (currentProcess->totalTime < result->totalTime) {
+            result = currentProcess;
+        }
+        currentProcess = currentProcess->nextProcess;
+    }
+    return result;
+}
 int main(int argc, char *argv[]) {
     initClk();
 
