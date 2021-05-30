@@ -10,12 +10,28 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h> // for strtok function.
+
 
 typedef short bool;
 #define true 1
 #define false 0
 
 #define SHKEY 300
+
+/* struct holds the process informations */
+struct process_information {
+    int id;
+    int totalTime;
+    int arrivalTime;
+    int remainingTime;
+    int runTime;
+    int priority;    //(low)10 >= priorit >= (high)0
+    int endTime;     // 0 --> not finished.
+    int state;       //-1 --> finished, 0 --> stopped, 1 --> running.
+    //* waiting time = endTime-arrivalTime - totalTime
+    //* running time = getClk() - arrivalTime
+};
 
 ///==============================
 //don't mess with this variable//
