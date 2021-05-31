@@ -214,5 +214,5 @@ int main(int argc, char *argv[]) {
     //=========================================
 
     //TODO: upon termination release the clock resources.
-    destroyClk(true);
+   // destroyClk(true);
 }

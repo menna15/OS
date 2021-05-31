@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
                                      3 --> HPF(preemtive highest priority first),
                                      4 --> SRTN(shortest remaining time first),
                                      5 --> RR(round robin)*/
-                                     
+
     printf("\n 1 --> FCFS   2 --> SJF  3 --> HPF  4 --> SRTN  5 --> RR\n");                              
     printf("Please, enter the algorithm number you want to run :");
     scanf("%d",&algorithim);
@@ -44,7 +44,68 @@ int main(int argc, char *argv[])
       printf("\nPlease, enter the required quantum for Round Robin :");
       scanf("%d",&quantum);
     }
-    //////////////////////////////////////////////////////////////
+   
+    // TODO Generation Main Loop
+    ///////////////////////////////////////////////////////////////////////////////
+    //* 5. Create a data structure for processes and provide it with its parameters. 
+    ///////////////////////////////////////////////////////////////////////////////
+
+       /* use array as we know that thoses processes will be sorted in the file based on the arrival time */
+
+       int num_of_processes = 0;
+       char process_data[MAX_CHAR_IN_LINE];
+
+       while(fgets(process_data,MAX_CHAR_IN_LINE,pFile) != NULL )
+       {
+        if(process_data[0] == '#')  continue;            /* neglect thoses lines starting with # */
+        
+        else {num_of_processes ++;} 
+       }
+       fclose(pFile);
+       
+       printf("num of processes is %d\n", num_of_processes);
+
+       struct process_information *processes_array = NULL;
+       processes_array = (struct process_information*)malloc(sizeof(struct process_information) * num_of_processes);  
+       struct process_information process;
+       
+       
+       /* reading the processes data from the file and storing in the array */
+       pFile = fopen(filePath, "r"); 
+       
+       num_of_processes = 0;    /* index for the current process */
+       while(fgets(process_data,MAX_CHAR_IN_LINE,pFile) != NULL )
+       {
+        if(process_data[0] == '#')  continue;            /* neglect thoses lines starting with # */
+        
+        char *tokens = strtok(process_data,"\t");        /* since fields are separated with one tab character ‘\t’. */
+        for(int i = 0; i<=3 && tokens != NULL; i++) {
+           
+           printf("token = %s \n",tokens);
+           if(i == 0) {process.id = atoi(tokens);}
+           else if(i == 1) process.arrivalTime = atoi(tokens);
+           else if(i == 2) process.runTime = atoi(tokens);
+           else if(i == 3) process.priority = atoi(tokens);
+
+           tokens = strtok(NULL, "\t");
+        }
+        
+        processes_array[num_of_processes] = process;
+        num_of_processes ++;
+       }
+    
+       fclose(pFile);
+
+       /* just for testing only */
+
+       for (int i =0 ; i< num_of_processes;i++)
+       {
+           printf("My id is %d , arrival time = %d , runtime = %d , priority = %d  \n",
+           processes_array[i].id,processes_array[i].arrivalTime,processes_array[i].runTime,processes_array[i].priority);
+
+       }
+
+     //////////////////////////////////////////////////////////////
     //* (3). Initiate and create the scheduler and clock processes.
     //////////////////////////////////////////////////////////////
 
@@ -83,54 +144,6 @@ int main(int argc, char *argv[])
     int x = getClk();
     printf("Current Time is %d\n", x);
 
-    // TODO Generation Main Loop
-    
-    ///////////////////////////////////////////////////////////////////////////////
-    //* 5. Create a data structure for processes and provide it with its parameters. 
-    ///////////////////////////////////////////////////////////////////////////////
-
-       /* use array as we know that thoses processes will be sorted in the file based on the arrival time */
-
-       struct process_information *processes_array = NULL;
-
-       // TODO  **** NOTE **** i asked eng hussein about the size if i can allocate with 20 then reallocate again, and waiting for his response.
-       processes_array = (struct process_information *)malloc(sizeof(struct process_information) * 20);  
-       struct process_information process;
-       int num_of_processes = 0;
-       char process_data[MAX_CHAR_IN_LINE];
-       
-       /* reading the processes data from the file and storing in the array */
-       while(fgets(process_data,MAX_CHAR_IN_LINE,pFile) != NULL )
-       {
-        if(process_data[0] == '#')  continue;            /* neglect thoses lines starting with # */
-        
-        char *tokens = strtok(process_data,"\t");        /* since fields are separated with one tab character ‘\t’. */
-        for(int i = 0; i<=3 && tokens != NULL; i++) {
-           
-           printf("token = %s \n",tokens);
-           if(i == 0) {process.id = atoi(tokens);}
-           else if(i == 1) process.arrivalTime = atoi(tokens);
-           else if(i == 2) process.runTime = atoi(tokens);
-           else if(i == 3) process.priority = atoi(tokens);
-
-           tokens = strtok(NULL, "\t");
-        }
-        
-        processes_array[num_of_processes] = process;
-        num_of_processes ++;
-       }
-    
-       fclose(pFile);
-
-       /* just for testing only */
-
-       for (int i =0 ; i< num_of_processes;i++)
-       {
-           printf("My id is %d , arrival time = %d , runtime = %d , priority = %d  \n",
-           processes_array[i].id,processes_array[i].arrivalTime,
-           processes_array[i].runTime, processes_array[i].priority);
-
-       }
 
     ////////////////////////////////////////////////////////////////////
     //* 6. Send the information to the scheduler at the appropriate time.
@@ -156,8 +169,8 @@ int main(int argc, char *argv[])
     
     printf("\nNum of the algorithm = %d , quantum (RR) = %d \n", buff.algorithm,buff.quantum); //TODO for test only 
 
-    int send_val = msgsnd(msgq_up_id, &buff, sizeof(buff.algorithm)+sizeof(buff.quantum), !IPC_NOWAIT);
-    if (send_val == -1) {perror("Error in send the algorithm number to the scheduler.");}
+    /* int send_val = msgsnd(msgq_up_id, &buff, sizeof(buff.algorithm)+sizeof(buff.quantum), !IPC_NOWAIT);
+    if (send_val == -1) {perror("Error in send the algorithm number to the scheduler.");} */
     
     int PROC_COUNT_AT_THIS_TIME = 0;  /* number of the processes whose arrival time = current time - */
     int INDEX = 0;
@@ -208,8 +221,8 @@ int main(int argc, char *argv[])
             
             pbuff.num_of_processes = PROC_COUNT_AT_THIS_TIME;
 
-            send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
-            if (send_val == -1) {perror("Error in send the process to the scheduler.");}
+           /*  send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
+            if (send_val == -1) {perror("Error in send the process to the scheduler.");} */
 
             INDEX ++; PROC_COUNT_AT_THIS_TIME --;
             
@@ -221,8 +234,8 @@ int main(int argc, char *argv[])
             
             pbuff.num_of_processes = 0;
 
-            send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
-            if (send_val == -1) {perror("Error in send the process to the scheduler.");}
+            /* send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
+            if (send_val == -1) {perror("Error in send the process to the scheduler.");} */
       }
 
       if(INDEX == num_of_processes && pbuff.all_sent) break ;   /* all processes sent to the scheduler */
