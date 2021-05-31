@@ -4,7 +4,10 @@
 #define NUM_PROCESSES  
 
 void clearResources(int);
+//////////////////////////
 int msgq_up_id;
+//////////////////////////
+
 int main(int argc, char *argv[])
 {
     signal(SIGINT, clearResources);
@@ -29,7 +32,7 @@ int main(int argc, char *argv[])
                                      4 --> SRTN(shortest remaining time first),
                                      5 --> RR(round robin)*/
 
-    printf("\n 1 --> FCFS   2 --> SJF  3 --> HPF  4 --> SRTN  5 --> RR\n");                              
+    printf("\n1 --> FCFS   2 --> SJF  3 --> HPF  4 --> SRTN  5 --> RR\n");                              
     printf("Please, enter the algorithm number you want to run :");
     scanf("%d",&algorithim);
 
@@ -72,7 +75,7 @@ int main(int argc, char *argv[])
        
        /* reading the processes data from the file and storing in the array */
        pFile = fopen(filePath, "r"); 
-       
+
        num_of_processes = 0;    /* index for the current process */
        while(fgets(process_data,MAX_CHAR_IN_LINE,pFile) != NULL )
        {
@@ -150,16 +153,20 @@ int main(int argc, char *argv[])
     ////////////////////////////////////////////////////////////////////
 
     /* starting the communication between the process_generator and the scheduler to sent the proccesses.*/
-    
-    key_t msg_id = ftok("keyfile", 65);      
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+                                              // TODO IPCS
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    key_t msg_id = ftok("keyfile", SCHED_GENERTOR_MSGQ_KEY);      
     msgq_up_id = msgget(msg_id, 0666 | IPC_CREAT);
+
 
     if (msgq_up_id == -1 )
     {
-        perror("Error in creating message queue 1");
+        perror("Error in creating message queue to communicate with the scheduler");
         exit(-1);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
     struct algorithmBuffer buff;   /* for sending the algorithm number and quantum if exists */
     
     // setting the message mtype with the last four digits of the process id (to make it special).
@@ -169,20 +176,25 @@ int main(int argc, char *argv[])
     
     printf("\nNum of the algorithm = %d , quantum (RR) = %d \n", buff.algorithm,buff.quantum); //TODO for test only 
 
-    /* int send_val = msgsnd(msgq_up_id, &buff, sizeof(buff.algorithm)+sizeof(buff.quantum), !IPC_NOWAIT);
-    if (send_val == -1) {perror("Error in send the algorithm number to the scheduler.");} */
-    
+    int send_val = msgsnd(msgq_up_id, &buff, sizeof(buff.algorithm)+sizeof(buff.quantum), !IPC_NOWAIT);
+    if (send_val == -1) 
+    { perror("Error in send the algorithm number to the scheduler.");
+    } 
+
+
     int PROC_COUNT_AT_THIS_TIME = 0;  /* number of the processes whose arrival time = current time - */
     int INDEX = 0;
     int CURRENT_TIME = -1;
 
-    struct processBuffer pbuff;  /* for sending the processes at specific instance of time 
+    struct processBuffer pbuff;  /* for sending the processes at specific instance of time
                                     and all_sent is indicator if this the last time the scheduler will receive processes
                                     processBuffer.num_of_processes --> number of process that arrived at the current time*/
     pbuff.mtype =  getpid() % 10000;     
     pbuff.all_sent = false ;
 
+    /****************************************************************************************************************
     /* this section is resposible for sending the processes - whose arrival time = current time - to the scheduler */
+    /****************************************************************************************************************/
     while(true)
     {   
       PROC_COUNT_AT_THIS_TIME = 0;
@@ -221,21 +233,12 @@ int main(int argc, char *argv[])
             
             pbuff.num_of_processes = PROC_COUNT_AT_THIS_TIME;
 
-           /*  send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
-            if (send_val == -1) {perror("Error in send the process to the scheduler.");} */
+            send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
+            if (send_val == -1) {perror("Error in send the process to the scheduler.");}
 
             INDEX ++; PROC_COUNT_AT_THIS_TIME --;
             
         }
-      }
-
-      if(PROC_COUNT_AT_THIS_TIME == 0)
-      {
-            
-            pbuff.num_of_processes = 0;
-
-            /* send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
-            if (send_val == -1) {perror("Error in send the process to the scheduler.");} */
       }
 
       if(INDEX == num_of_processes && pbuff.all_sent) break ;   /* all processes sent to the scheduler */
@@ -245,16 +248,15 @@ int main(int argc, char *argv[])
     ////////////////////////////
     //* 7. Clear clock resources
     ////////////////////////////
+    //TODO *****ask****** ???  /* do that when the scheduler finishes? */
     destroyClk(true);
-
 
 }
 
 void clearResources(int signum)
-{
-    //TODO Clears all resources in case of interruption
+{   
     destroyClk(true);
+    //TODO Clears all resources in case of interruption
     msgctl(msgq_up_id, IPC_RMID, (struct msqid_ds *)0);
-    kill(getpid(), SIGKILL);
-    signal(SIGINT, clearResources);
+    exit(0);
 }
