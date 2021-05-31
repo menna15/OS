@@ -1,4 +1,5 @@
 #include "headers.h"
+
 //linked list implemention as the process come in different time and process could be removed unlike array
 struct PCB {
     int id;
@@ -103,18 +104,12 @@ void processToFile(struct PCB *processe) {
     }
     fclose(schedulerLog);
 }
-struct PCB *getProperSRTN() {  //for saad
-    struct PCB *currentProcess = root;
-    struct PCB *result = currentProcess;
-    while (currentProcess != NULL) {
-        if (currentProcess->remainingTime < result->remainingTime) {
-            result = currentProcess;
-        }
-        currentProcess = currentProcess->nextProcess;
-    }
-    return result;
-}
-struct PCB *getProperSJF() {  //for saad
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                       // TODO : add your helper functions here
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/* 2- SJF --> Saad */
+struct PCB *getProperSJF() {  
     struct PCB *currentProcess = root;
     struct PCB *result = currentProcess;
     while (currentProcess != NULL) {
@@ -125,8 +120,28 @@ struct PCB *getProperSJF() {  //for saad
     }
     return result;
 }
+/* 3- HPF --> Menna */
+struct PCB *getProperHPF() {  
+    
+}
+/* 4- SRTN --> Saad */
+struct PCB *getProperSRTN() {  
+    struct PCB *currentProcess = root;
+    struct PCB *result = currentProcess;
+    while (currentProcess != NULL) {
+        if (currentProcess->remainingTime < result->remainingTime) {
+            result = currentProcess;
+        }
+        currentProcess = currentProcess->nextProcess;
+    }
+    return result;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
+
     initClk();
+
+    int algorithm, quantum;
 
     //TODO: get the data proberly
     //=========================================
@@ -137,39 +152,65 @@ int main(int argc, char *argv[]) {
     process.priority = 5;
     addProcess(process);
     //=========================================
+    /* This section is resposible for getting the processes from the scheduler :*/
+    
+     
 
+
+
+     //=========================================
     //TODO: implement the scheduler.
-    //=========================================
-    //4.Shortest Remaining Time Next (SRTN)
-    struct PCB *runningProcess = getNextSRTN();
-    runningProcess->state = 1;
-    while (true) {
-        int time = getClk();
-        struct PCB *tempProcess = getProperElement();
-        if (runningProcess != tempProcess) {
-            if (runningProcess != NULL) {
-                runningProcess->state = 0;
-                processToFile(runningProcess);
-            }
-            runningProcess = tempProcess;
+    switch (algorithm)
+    {
+    case 1:
+        
+        break;
+    case 2:
+        
+        break;
+
+    case 3:
+        break;
+    case 4:
+        //4.Shortest Remaining Time Next (SRTN)
+        {
+            struct PCB *runningProcess = getProperSRTN();
             runningProcess->state = 1;
-        }
-        if (runningProcess != NULL) {
-            runningProcess->remainingTime -= 1;
-            if (runningProcess->remainingTime == 0) {
-                runningProcess->state = -1;
-                runningProcess->endTime = time;
-                processToFile(runningProcess);
-                runningProcess = NULL;
+            while (true) {
+                int time = getClk();
+                struct PCB *tempProcess = getProperSRTN();
+                if (runningProcess != tempProcess) {
+                    if (runningProcess != NULL) {
+                        runningProcess->state = 0;
+                        processToFile(runningProcess);
+                    }
+                    runningProcess = tempProcess;
+                    runningProcess->state = 1;
+                }
+                if (runningProcess != NULL) {
+                    runningProcess->remainingTime -= 1;
+                    if (runningProcess->remainingTime == 0) {
+                        runningProcess->state = -1;
+                        runningProcess->endTime = time;
+                        processToFile(runningProcess);
+                        runningProcess = NULL;
+                    }
+                }
+                if (runningProcess != NULL) {
+                    processToFile(runningProcess);
+                }
+                deleteFinishedProcesses();  //garbage collector
+                while (time == getClk()) {
+                }
             }
         }
-        if (runningProcess != NULL) {
-            processToFile(runningProcess);
-        }
-        deleteFinishedProcesses();  //garbage collector
-        while (time == getClk()) {
-        }
+        break;
+    
+    default:
+        break;
     }
+    //=========================================
+    
     //=========================================
 
     //TODO: upon termination release the clock resources.
