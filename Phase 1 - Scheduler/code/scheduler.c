@@ -1,6 +1,6 @@
 #include "headers.h"
 
-int msgq2_id,msgq1_id;
+int msgq2_id, msgq1_id;
 
 void scheduler();
 //linked list implemention as the process come in different time and process could be removed unlike array
@@ -41,7 +41,6 @@ void addProcess(struct PCB processeObj) {  //create PCB object with the paramete
     }
     tail->nextProcess = processe;
     tail = processe;
-
 }
 void deleteProcess(struct PCB *processe) {
     if (processe == root) {
@@ -110,11 +109,11 @@ void processToFile(struct PCB *processe) {
     fclose(schedulerLog);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                       // TODO : add your helper functions here
+// TODO : add your helper functions here
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* 2- SJF --> Saad */
-struct PCB *getProperSJF() {  
+struct PCB *getProperSJF() {
     struct PCB *currentProcess = root;
     struct PCB *result = currentProcess;
     while (currentProcess != NULL) {
@@ -126,7 +125,7 @@ struct PCB *getProperSJF() {
     return result;
 }
 /* 3- HPF --> Menna */
-struct PCB *getProperHPF() {  
+struct PCB *getProperHPF() {
     struct PCB *currentProcess = root;
     struct PCB *result = currentProcess;
     while (currentProcess != NULL) {
@@ -136,10 +135,9 @@ struct PCB *getProperHPF() {
         currentProcess = currentProcess->nextProcess;
     }
     return result;
-    
 }
 /* 4- SRTN --> Saad */
-struct PCB *getProperSRTN() {  
+struct PCB *getProperSRTN() {
     struct PCB *currentProcess = root;
     struct PCB *result = currentProcess;
     while (currentProcess != NULL) {
@@ -152,10 +150,9 @@ struct PCB *getProperSRTN() {
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
-
-    int algorithm, quantum,num_of_processes=0;
+    int algorithm, quantum, num_of_processes = 0;
     struct algorithmBuffer algoBuffer;
-     
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //* (1). initialize the clk for the scheduler to start poping from the received processes at the propriete time.
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,66 +162,58 @@ int main(int argc, char *argv[]) {
     //////////////////////////////////////////////////////////////////////////////////////////////
     //* (2). start the communication between process generator and the scheduler  == message queue.
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    
-    key_t msg1_id = ftok("keyfile", SCHED_GENERTOR_MSGQ_KEY);      
+
+    key_t msg1_id = ftok("keyfile", SCHED_GENERTOR_MSGQ_KEY);
     msgq1_id = msgget(msg1_id, 0666 | IPC_CREAT);
 
-    if (msgq1_id == -1 )
-    {
+    if (msgq1_id == -1) {
         perror("Error in creating message queue to communicate with the scheduler");
         exit(-1);
     }
     /* -(1) first receive tha algorithm number and the quantum if existed */
-    printf("Scheduler --> time = %d",getClk());
-    int rec_val = msgrcv(msgq1_id, &algoBuffer,sizeof(algoBuffer.algorithm)+sizeof(algoBuffer.quantum), 0, !IPC_NOWAIT);
-    
+    printf("Scheduler --> time = %d", getClk());
+    int rec_val = msgrcv(msgq1_id, &algoBuffer, sizeof(algoBuffer.algorithm) + sizeof(algoBuffer.quantum), 0, !IPC_NOWAIT);
+
     if (rec_val == -1)
         perror("Error in receiveing algorithm number from process generator");
-    else
-    {   algorithm = algoBuffer.algorithm;
+    else {
+        algorithm = algoBuffer.algorithm;
         quantum = algoBuffer.quantum;
-        printf("\nalgorithm is %d\n",algorithm);
+        printf("\nalgorithm is %d\n", algorithm);
     }
-    
-    /* -(2) second receive the processes */ 
+
+    /* -(2) second receive the processes */
     //TODO: get the data proberly
-    struct processBuffer pbuff; 
+    struct processBuffer pbuff;
     struct PCB received_process;
     bool is_finished = false;
-    while(! is_finished)
-    {
-        do
-        {   
-
-            rec_val = msgrcv(msgq1_id, &pbuff,sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), 0, !IPC_NOWAIT);
+    while (!is_finished) {
+        do {
+            rec_val = msgrcv(msgq1_id, &pbuff, sizeof(pbuff.num_of_processes) + sizeof(pbuff.all_sent) + sizeof(pbuff.process), 0, !IPC_NOWAIT);
 
             if (rec_val == -1)
                 perror("Error in receiveing process from process generator");
-            else
-            {   
+            else {
                 is_finished = pbuff.all_sent;
                 num_of_processes = pbuff.num_of_processes;
                 received_process.id = pbuff.process.id;
-                received_process.arrivalTime= pbuff.process.arrivalTime;
+                received_process.arrivalTime = pbuff.process.arrivalTime;
                 received_process.runTime = pbuff.process.runTime;
                 received_process.priority = pbuff.process.priority;
-                printf("Scheduler --> time = %d",getClk());
-                printf("\nProcess id is %d , arrival time = %d , runtime = %d , priority = %d  is received. \n\n", //TODO for test only
-                received_process.id,received_process.arrivalTime,
-                received_process.runTime,received_process.priority);
+                printf("Scheduler --> time = %d", getClk());
+                printf("\nProcess id is %d , arrival time = %d , runtime = %d , priority = %d  is received. \n\n",  //TODO for test only
+                       received_process.id, received_process.arrivalTime,
+                       received_process.runTime, received_process.priority);
 
                 addProcess(received_process);
-                
-                
             }
 
-        }while(num_of_processes-1 > 0);
-        scheduler(algorithm,quantum);
-
+        } while (num_of_processes - 1 > 0);
+        scheduler(algorithm, quantum);
     }
-    
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-/*     /* those for testing only 
+    /*     /* those for testing only 
     struct PCB process2;
     process2.id = 2;
     process2.arrivalTime = 1;
@@ -246,20 +235,15 @@ int main(int argc, char *argv[]) {
     process3.priority = 2;
     addProcess(process3); */
 
-    
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //* (5). release the resourses after finishing all processes.
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //TODO: upon termination release the clock resources.
     destroyClk(false);
-
 }
 
-void scheduler (int algorithm,int quantum)
-{
-    
+void scheduler(int algorithm, int quantum) {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //* (3). start the communication between process.c  and the scheduler.c  == message queue to send the remaninigTime to it.
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -272,57 +256,51 @@ void scheduler (int algorithm,int quantum)
         perror("Error in creating message queue between scheduler and the process");
         exit(-1);
     } */
-    
-    //TODO: implement the scheduler.
-    switch (algorithm)
-    {
+
+    //TODO: compleate the scheduler.
+    struct PCB *(*getProperElement)();  //function pointer to select the algorithm
+    switch (algorithm) {
         case 1:
-            
             break;
         case 2:
-            
-            printf("algoooo 2");
+            getProperElement = getProperSJF;
             break;
-
         case 3:
+            getProperElement = getProperHPF;
             break;
-
         case 4:
-        {
-        //4.Shortest Remaining Time Next (SRTN)
-        struct PCB *runningProcess = getProperSRTN();
-        runningProcess->state = 1;
-        while (true)
-        {
-            int time = getClk();
-            struct PCB *tempProcess = getProperSRTN();
-            if (runningProcess != tempProcess) {
-                if (runningProcess != NULL) {
-                    runningProcess->state = 0;
-                    processToFile(runningProcess);
-                }
-                runningProcess = tempProcess;
-                runningProcess->state = 1;
-            }
-            if (runningProcess != NULL) {
-                runningProcess->remainingTime -= 1;
-                if (runningProcess->remainingTime == 0) {
-                    runningProcess->state = -1;
-                    runningProcess->endTime = time;
-                    processToFile(runningProcess);
-                    runningProcess = NULL;
-                }
-            }
-            if (runningProcess != NULL) {
-                processToFile(runningProcess);
-            }
-            deleteFinishedProcesses();  //garbage collector
-            while (time == getClk()) {
-            }
-        }
-        break;
-        }
+            getProperElement = getProperSRTN;
+            break;
+    }
 
-    
-    } 
+    struct PCB *runningProcess = getProperElement();
+    if (runningProcess != NULL) {
+        runningProcess->state = 1;
+    }
+    //NOTE: this Could be loop
+    int time = getClk();
+    struct PCB *tempProcess = getProperElement();
+    if (runningProcess != tempProcess) {
+        if (runningProcess != NULL) {
+            runningProcess->state = 0;
+            processToFile(runningProcess);
+        }
+        runningProcess = tempProcess;
+        runningProcess->state = 1;
+    }
+    if (runningProcess != NULL) {
+        runningProcess->remainingTime -= 1;
+        if (runningProcess->remainingTime == 0) {
+            runningProcess->state = -1;
+            runningProcess->endTime = time;
+            processToFile(runningProcess);
+            runningProcess = NULL;
+        }
+    }
+    if (runningProcess != NULL) {
+        processToFile(runningProcess);
+    }
+    deleteFinishedProcesses();  //garbage collector
+    while (time == getClk()) {
+    }
 }
