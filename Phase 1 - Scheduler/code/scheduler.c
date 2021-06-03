@@ -211,7 +211,10 @@ int main(int argc, char *argv[]) {
         } while (num_of_processes - 1 > 0);
         scheduler(algorithm, quantum);
     }
-
+    /*to continue after getting all the processes*/
+    while (root != NULL) {
+        scheduler(algorithm, quantum);
+    }
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     /*     /* those for testing only 
     struct PCB process2;
