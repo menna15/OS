@@ -137,6 +137,27 @@ void processToFile(struct PCB *processe)
 // TODO : add your helper functions here
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/* 1- FCFS --> Gamal */
+
+//the process to run is chosen using 2 conditions
+//I either choose the process with the lowest arrival time
+//or if there exists many processes with the same arrival time, which is highly probable, I choose the process with the lowest number
+//This could've been also implemented using a queue
+struct PCB *getProperFCFS()
+{
+    struct PCB *currentProcess=root;
+    struct PCB *result =currentProcess;
+    while(currentProcess!=NULL)
+    {
+        if((currentProcess->arrivalTime<result->arrivalTime)||
+        (currentProcess->arrivalTime=result->arrivalTime&&currentProcess->num<result->num))
+            result=currentProcess;
+        currentProcess=currentProcess->nextProcess;
+    }
+    return result;
+
+}
+
 /* 2- SJF --> Saad */
 struct PCB *getProperSJF()
 {
