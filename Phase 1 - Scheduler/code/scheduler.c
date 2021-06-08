@@ -402,6 +402,7 @@ void scheduler(int algorithm, int quantum)
     switch (algorithm)
     {
     case 1:
+        getProperElement = getProperFCFS;
         break;
     case 2:
         getProperElement = getProperSJF;

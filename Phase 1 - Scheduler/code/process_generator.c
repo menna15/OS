@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
     }
     else if (CLK_PID == 0)  /* child process */ 
     {
-       execl("clk.out", "clk", "-f", NULL);  /* want the child process(clock)to execute that code */
+       execl("./clk.out", "clk", "-f", NULL);  /* want the child process(clock)to execute that code */
     }
     /* fork to start the scheduler node to work */
     else  /* parent */
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
         }
         else if (SCHED_PID == 0)  /* child process */ 
         {
-        execl("scheduler.out", "scheduler", "-f", NULL);  /* want the child process(scheduler)to execute that code */
+        execl("./scheduler.out", "scheduler", "-f", NULL);  /* want the child process(scheduler)to execute that code */
         }
     }
 
