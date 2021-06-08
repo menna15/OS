@@ -84,8 +84,14 @@ int allocateMemory(int start, int size, struct memoryBlock *currentBlock)
                 return -1;
             }
             currentBlock->state = 1;
-            if (currentBlock->size - size == 0)
+            if (currentBlock->nextBlock == NULL && currentBlock->size - size == 0) //this case that I found the allocate space in the end of memory
             {
+                memory = root;
+                return 0;
+            }
+            else if (currentBlock->size - size == 0) //this case that I found the allocate space in the middel of memory
+            {
+                memory = currentBlock -> nextBlock;
                 return 0;
             }
             struct memoryBlock *newBlock = (struct memoryBlock *)malloc(sizeof(struct memoryBlock));
@@ -95,9 +101,7 @@ int allocateMemory(int start, int size, struct memoryBlock *currentBlock)
             currentBlock->size = size;
             newBlock->nextBlock = currentBlock->nextBlock;
             currentBlock->nextBlock = newBlock;
-            memory = newBlock->nextBlock;
-            if(memory == NULL)
-            memory = root;
+            memory = newBlock;
             return 0;
         }
     }
@@ -120,14 +124,16 @@ int FirstFit(int size)
 int LastFit(int size)
 { //-1->if not avalible, start address->avalible
     struct memoryBlock *currentBlock = memory;
-    while (currentBlock != NULL)
-    {
+    do{
+        if(currentBlock == NULL) // to complete the chain
+            currentBlock = root;
         if (allocateMemory(currentBlock->start, size, currentBlock) != -1)
         {
             return currentBlock->start;
         }
         currentBlock = currentBlock->nextBlock;
     }
+    while (currentBlock != memory);
     return -1;
 }
 
