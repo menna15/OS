@@ -1,4 +1,5 @@
-#include "stdio.h";
+#include "stdio.h"
+#include <stdlib.h>
 
 struct PCB
 {
@@ -39,7 +40,7 @@ void initMemory()
 void checkNeighboring() // if there is neighbors segments empty then it will merge them
 {
     struct memoryBlock *currentBlock = root;
-    while (currentBlock != NULL)
+    while (currentBlock != NULL && currentBlock -> nextBlock != NULL)
     {
         if (currentBlock->state == 0 && currentBlock->nextBlock->state == 0)
         {
@@ -55,17 +56,14 @@ void checkNeighboring() // if there is neighbors segments empty then it will mer
 void freeMemory(int start)
 { // it set to specific memory segment 0 (empty seg.)
     struct memoryBlock *currentBlock = root;
-    struct memoryBlock *lastBlock;
-
     while (currentBlock != NULL)
     {
         if (currentBlock->start == start && currentBlock->state == 1)
         {
-            currentBlock->state == 0;
+            currentBlock->state = 0;
             checkNeighboring();
             return;
         }
-        lastBlock = currentBlock;
         currentBlock = currentBlock->nextBlock;
     }
 }
@@ -91,7 +89,7 @@ int allocateMemory(int start, int size, struct memoryBlock *currentBlock)
             }
             else if (currentBlock->size - size == 0) //this case that I found the allocate space in the middel of memory
             {
-                memory = currentBlock -> nextBlock;
+                memory = currentBlock->nextBlock;
                 return 0;
             }
             struct memoryBlock *newBlock = (struct memoryBlock *)malloc(sizeof(struct memoryBlock));
@@ -124,16 +122,16 @@ int FirstFit(int size)
 int LastFit(int size)
 { //-1->if not avalible, start address->avalible
     struct memoryBlock *currentBlock = memory;
-    do{
-        if(currentBlock == NULL) // to complete the chain
+    do
+    {
+        if (currentBlock == NULL) // to complete the chain
             currentBlock = root;
         if (allocateMemory(currentBlock->start, size, currentBlock) != -1)
         {
             return currentBlock->start;
         }
         currentBlock = currentBlock->nextBlock;
-    }
-    while (currentBlock != memory);
+    } while (currentBlock != memory);
     return -1;
 }
 
@@ -144,10 +142,11 @@ int BestFit(int size)
     int bestsize = __INT_MAX__;
     while (currentBlock != NULL)
     {
-        if (currentBlock->state == 0 && currentBlock->size > size && currentBlock->size < bestsize)
+        if (currentBlock->state == 0 && currentBlock->size >= size && currentBlock->size < bestsize)
         {
             bestsize = currentBlock->size;
             choosenBlock = currentBlock;
+
         }
         currentBlock = currentBlock->nextBlock;
     }
@@ -158,8 +157,8 @@ int BestFit(int size)
     }
     return -1;
 }
-void Buddy_System_Allocation(int size)
-{ //-1->if not avalible, start address->avalible
+int Buddy_System_Allocation(int size)
+{                 //-1->if not avalible, start address->avalible
     if (size < 8) //2^3
         size = 8;
     else if (size < 16) //2^4
@@ -202,7 +201,35 @@ void Buddy_System_Allocation(int size)
     return -1;
 }
 
+// void Print_memo() for testing
+// {
+//     struct memoryBlock *currentBlock = root;
+//     while (currentBlock != NULL)
+//     {
+//         printf("start -> %d, size -> %d, and state -> %d\n", currentBlock->start, currentBlock->size, currentBlock->state);
+//         currentBlock = currentBlock -> nextBlock;
+//     }
+//     return;
+// }
 int main()
 {
     initMemory();
+
+    /* for testing 
+    FirstFit(5);
+    Print_memo();
+    printf("\n");
+    FirstFit(20);
+    Print_memo();
+    printf("\n");
+    freeMemory(0);
+    Print_memo();
+    printf("\n");
+    FirstFit(996);
+    Print_memo();
+    printf("\n");
+    FirstFit(5);
+    Print_memo();
+    printf("\n");
+*/
 }
