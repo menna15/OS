@@ -1,6 +1,8 @@
 #include "headers.h"
 
 int msgq2_id, msgq1_id;
+int remainingTime_shm_id;
+void *rtAddr;//shared memory address for remaing process time;
 
 void scheduler();
 //linked list implemention as the process come in different time and process could be removed unlike array
@@ -283,7 +285,7 @@ int main(int argc, char *argv[])
 
     if (msgq1_id == -1)
     {
-        perror("Error in creating message queue to communicate with the scheduler");
+        perror("Error in creating message queue to communicate with the process generator");
         exit(-1);
     }
     /* -(1) first receive tha algorithm number and the quantum if existed */
@@ -298,6 +300,21 @@ int main(int argc, char *argv[])
         quantum = algoBuffer.quantum;
         printf("\nalgorithm is %d\n", algorithm);
     }
+
+    //Gamal
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////initializing shared memory to communicate reamining time
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    key_t shmkey = ftok("keyfile", RTSHMKEY);
+    remainingTime_shm_id = shmget(shmkey, 4096, 0666 | IPC_CREAT);
+
+    if (remainingTime_shm_id==-1)
+    {
+        perror("Error in creating of remainging time shared memory");
+        exit(-1);
+    }
+
+    *(int*)rtAddr =(int*)shmat(remainingTime_shm_id, (void *)0, 0);
 
     /* -(2) second receive the processes */
     //TODO: get the data proberly
@@ -329,7 +346,28 @@ int main(int argc, char *argv[])
             }
 
         } while (num_of_processes - 1 > 0);
+        /*//Gamal
         scheduler(algorithm, quantum);
+        int cur_proc_id=globalrunningProcess->id;
+        int pid=fork();
+        if(pid==0)
+        {
+            //child
+            *(int*)rtAddr=globalrunningProcess->remainingTime;
+            execl("process.c",NULL);
+        }
+        else
+        {//parent
+            while(root!=NULL)
+            {
+                scheduler(algorithm,quantum);
+                if(cur_proc_id!=globalrunningProcess->id)
+                {
+                    kill(pid,SIGSTOP);
+                }
+            }
+
+        }*/
     }
     /*to continue after getting all the processes*/
     while (root != NULL) {
@@ -388,20 +426,22 @@ void scheduler(int algorithm, int quantum)
     //* (3). start the communication between process.c  and the scheduler.c  == message queue to send the remaninigTime to it.
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*key_t msg2_id = ftok("keyfile", SCHED_PROC_MSGQ_KEY);      
+    key_t msg2_id = ftok("keyfile", SCHED_PROC_MSGQ_KEY);      
     msgq2_id = msgget(msg2_id, 0666 | IPC_CREAT);
 
     if (msgq2_id == -1 )
     {
         perror("Error in creating message queue between scheduler and the process");
         exit(-1);
-    } */
+    } 
+
 
     //TODO: compleate the scheduler.
     struct PCB *(*getProperElement)(); //function pointer to select the algorithm
     switch (algorithm)
     {
     case 1:
+        getProperElement = getProperFCFS;
         break;
     case 2:
         getProperElement = getProperSJF;
@@ -431,6 +471,20 @@ void scheduler(int algorithm, int quantum)
         if (runningProcess != NULL)
         {
             runningProcess->state = 1;
+            if(runningProcess->remainingTime==runningProcess->totalTime)//Gamal: process is not yet started and should begin
+            {
+                runningProcess->id=fork();
+                if(runningProcess->id==0)
+                {
+                    //child
+                    execl("process.c",NULL);
+                }
+            }
+            else if(*(int*)rtAddr<runningProcess->remainingTime)//process is paused and should continue
+            {
+                runningProcess->remainingTime=*(int*)rtAddr;
+                kill(runningProcess->id,SIGCONT);
+            }
         }
 
         //NOTE: this Could be loop
@@ -442,6 +496,7 @@ void scheduler(int algorithm, int quantum)
             if (runningProcess != NULL)
             {
                 runningProcess->state = 0;
+                kill(runningProcess->id,SIGSTOP);
                 processToFile(runningProcess);
             }
             runningProcess = tempProcess;
@@ -464,6 +519,9 @@ void scheduler(int algorithm, int quantum)
     {
         processToFile(runningProcess);
     }
+
+
+
     deleteFinishedProcesses(); //garbage collector
     while (time == getClk())
     {
