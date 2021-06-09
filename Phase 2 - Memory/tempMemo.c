@@ -175,7 +175,37 @@ int nearestPowerOfTwo(int size) {  //helpler to Buddy_System_Allocation
         return 1;
     }
 }
-
+void freeMemory_Buddy(int start) {
+    struct memoryBlock *currentBlock = root;
+    while (currentBlock != NULL) {
+        if (currentBlock->start == start) {
+            currentBlock->state = 0;
+            break;
+        }
+    }
+    currentBlock = root;
+    struct memoryBlock *lastBlock;
+    while (currentBlock != NULL) {
+        if (currentBlock->state == 0) {
+            if (currentBlock->start % 2 == 0 && currentBlock->nextBlock != NULL && currentBlock->nextBlock->state == 0) {
+                currentBlock->size *= 2;
+                struct memoryBlock *tempNext = currentBlock->nextBlock;
+                currentBlock->nextBlock = tempNext->nextBlock;
+                free(tempNext);
+                freeMemory_Buddy(currentBlock->start);
+            } else if (currentBlock->start % 2 == 1 && lastBlock->state == 0) {
+                lastBlock->size *= 2;
+                struct memoryBlock *tempNext = currentBlock;
+                lastBlock->nextBlock = tempNext->nextBlock;
+                free(tempNext);
+                freeMemory_Buddy(lastBlock->start);
+            }
+            return;
+        }
+        lastBlock = currentBlock;
+        currentBlock = currentBlock->nextBlock;
+    }
+}
 int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->avalible
     struct memoryBlock *currentBlock = root;
     while (currentBlock != NULL) {
@@ -219,22 +249,22 @@ int main() {
     /*assign memory for new process*/
 
     // assigning process to waiting list
-        // if (waitingList == NULL)
-        //     waitingList = waitingListTail = for_new_process;
-        // else {
-        //     waitingListTail->nextBlock = for_new_process;
-        //     waitingListTail = waitingListTail->nextBlock;
-        // }
+    // if (waitingList == NULL)
+    //     waitingList = waitingListTail = for_new_process;
+    // else {
+    //     waitingListTail->nextBlock = for_new_process;
+    //     waitingListTail = waitingListTail->nextBlock;
+    // }
 
-        // // run process from waiting list
-        // if (waitingList != NULL) {
-        //     int result;  // = /*run needed algorithm with size = waitingList -> size*/
-        //     if (result != -1) {
-        //         struct memoryBlock *temp = waitingList;
-        //         waitingList = waitingList->nextBlock;
-        //         free(temp);
-        //     }
-        // }
+    // // run process from waiting list
+    // if (waitingList != NULL) {
+    //     int result;  // = /*run needed algorithm with size = waitingList -> size*/
+    //     if (result != -1) {
+    //         struct memoryBlock *temp = waitingList;
+    //         waitingList = waitingList->nextBlock;
+    //         free(temp);
+    //     }
+    // }
 
     /* for Mohammed this test case failing (is it impossible case?)
     Buddy_System_Allocation(5);
