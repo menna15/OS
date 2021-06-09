@@ -26,8 +26,23 @@ struct memoryBlock {
     int size;                       //size of the block
     struct memoryBlock *nextBlock;  //next memory block
 };
-struct memoryBlock *root;    //this pointer to first segment in memory
+
+struct memoryBlock *root;  //this pointer to first segment in memory
+
 struct memoryBlock *memory;  //this pointer to first empty segment in memory (neded for Last Fit)
+
+struct PCB *waitingListHead = NULL;
+
+struct PCB *waitingListTail = NULL;
+
+void enQueue(struct PCB *processe) {
+    if (waitingListHead == NULL) {
+        waitingListHead = waitingListTail = processe;
+        return;
+    }
+    waitingListTail->nextProcess = processe;
+}
+
 void initMemory() {
     root = memory = (struct memoryBlock *)malloc(sizeof(struct memoryBlock));
     memory->state = 0;
@@ -35,6 +50,7 @@ void initMemory() {
     memory->size = 1024;
     memory->nextBlock = NULL;
 }
+
 void checkNeighboring()  // if there is neighbors segments empty then it will merge them
 {
     struct memoryBlock *currentBlock = root;
@@ -60,6 +76,7 @@ void freeMemory(int start) {  // it set to specific memory segment 0 (empty seg.
         currentBlock = currentBlock->nextBlock;
     }
 }
+
 int allocateMemory(int start, int size, struct memoryBlock *currentBlock) { /*-1->no memory avalible, 0->the operation has done*/
     if (currentBlock != NULL) {                                             // while isn't needed
         if (currentBlock->start == start) {
@@ -92,6 +109,7 @@ int allocateMemory(int start, int size, struct memoryBlock *currentBlock) { /*-1
     }
     return -1;
 }
+
 int FirstFit(int size) {  //-1->if not avalible, start address->avalible
     struct memoryBlock *currentBlock = root;
     while (currentBlock != NULL) {
@@ -133,6 +151,7 @@ int BestFit(int size) {  //-1->if not avalible, start address->avalible
     }
     return -1;
 }
+
 int nearestPowerOfTwo(int size) {  //helpler to Buddy_System_Allocation
     if (256 < size && size <= 1024) {
         return 1024;
@@ -156,6 +175,37 @@ int nearestPowerOfTwo(int size) {  //helpler to Buddy_System_Allocation
         return 1;
     }
 }
+void freeMemory_Buddy(int start) {
+    struct memoryBlock *currentBlock = root;
+    while (currentBlock != NULL) {
+        if (currentBlock->start == start) {
+            currentBlock->state = 0;
+            break;
+        }
+    }
+    currentBlock = root;
+    struct memoryBlock *lastBlock;
+    while (currentBlock != NULL) {
+        if (currentBlock->state == 0) {
+            if (currentBlock->start % 2 == 0 && currentBlock->nextBlock != NULL && currentBlock->nextBlock->state == 0) {
+                currentBlock->size *= 2;
+                struct memoryBlock *tempNext = currentBlock->nextBlock;
+                currentBlock->nextBlock = tempNext->nextBlock;
+                free(tempNext);
+                freeMemory_Buddy(currentBlock->start);
+            } else if (currentBlock->start % 2 == 1 && lastBlock->state == 0) {
+                lastBlock->size *= 2;
+                struct memoryBlock *tempNext = currentBlock;
+                lastBlock->nextBlock = tempNext->nextBlock;
+                free(tempNext);
+                freeMemory_Buddy(lastBlock->start);
+            }
+            return;
+        }
+        lastBlock = currentBlock;
+        currentBlock = currentBlock->nextBlock;
+    }
+}
 int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->avalible
     struct memoryBlock *currentBlock = root;
     while (currentBlock != NULL) {
@@ -172,7 +222,7 @@ int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->a
             }
             if (currentBlock->size == roundedSize) {
                 allocateMemory(currentBlock->start, currentBlock->size, currentBlock);
-                return 0;
+                return currentBlock->start;
             }
         }
         currentBlock = currentBlock->nextBlock;
@@ -180,34 +230,54 @@ int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->a
     return -1;
 }
 
-// void Print_memo() for testing
-// {
-//     struct memoryBlock *currentBlock = root;
-//     while (currentBlock != NULL)
-//     {
-//         printf("start -> %d, size -> %d, and state -> %d\n", currentBlock->start, currentBlock->size, currentBlock->state);
-//         currentBlock = currentBlock -> nextBlock;
-//     }
-//     return;
-// }
+void Print_memo()  //for testing
+{
+    struct memoryBlock *currentBlock = root;
+    while (currentBlock != NULL) {
+        printf("start -> %d, size -> %d, and state -> %d\n", currentBlock->start, currentBlock->size, currentBlock->state);
+        currentBlock = currentBlock->nextBlock;
+    }
+    return;
+}
+
 int main() {
     initMemory();
+    struct PCB *coming_process;
+    /*assign the process*/
+    struct memoryBlock *for_new_process;
+    /*assign memory for new process*/
 
-    /* for testing 
-    FirstFit(5);
+    // assigning process to waiting list
+    // if (waitingList == NULL)
+    //     waitingList = waitingListTail = for_new_process;
+    // else {
+    //     waitingListTail->nextBlock = for_new_process;
+    //     waitingListTail = waitingListTail->nextBlock;
+    // }
+
+    // // run process from waiting list
+    // if (waitingList != NULL) {
+    //     int result;  // = /*run needed algorithm with size = waitingList -> size*/
+    //     if (result != -1) {
+    //         struct memoryBlock *temp = waitingList;
+    //         waitingList = waitingList->nextBlock;
+    //         free(temp);
+    //     }
+    // }
+
+    Buddy_System_Allocation(5);
     Print_memo();
     printf("\n");
-    FirstFit(20);
+    Buddy_System_Allocation(20);
     Print_memo();
     printf("\n");
-    freeMemory(0);
+    freeMemory_Buddy(0);
     Print_memo();
     printf("\n");
-    FirstFit(996);
+    Buddy_System_Allocation(996);
     Print_memo();
     printf("\n");
-    FirstFit(5);
+    Buddy_System_Allocation(5);
     Print_memo();
     printf("\n");
-*/
 }
