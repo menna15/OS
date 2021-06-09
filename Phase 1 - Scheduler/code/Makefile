@@ -6,10 +6,10 @@ build:
 	gcc test_generator.c -o test_generator.out
 
 clean:
-	rm -f *.out  processes.txt scheduler.log
+	rm -f *.out  scheduler.log
 
 all: clean build
 
 run:
-	./test_generator.out
+	
 	./process_generator.out

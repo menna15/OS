@@ -206,9 +206,9 @@ struct PCB *getProperHPF()
     struct PCB *result = currentProcess;
     while (currentProcess != NULL)
     {
-        int newPriorityCurrent = currentProcess->priority + currentProcess->runTime - currentProcess->remainingTime;
-        int newPriorityResult = result->priority + result->runTime - result->remainingTime;
-        if (newPriorityCurrent <= newPriorityResult)
+        int newPriorityCurrent = currentProcess->priority ;
+        int newPriorityResult = result->priority ;
+        if (newPriorityCurrent > newPriorityResult)
         {
             result = currentProcess;
         }
@@ -223,7 +223,7 @@ struct PCB *getProperSRTN()
     struct PCB *currentProcess = root;
     struct PCB *result = currentProcess;
     while (currentProcess != NULL)
-    {
+    {   printf("current added process = %d\n",currentProcess->id);
         if (currentProcess->remainingTime < result->remainingTime)
         {
             result = currentProcess;
@@ -369,6 +369,8 @@ int main(int argc, char *argv[])
     struct processBuffer pbuff;
     struct PCB received_process;
     bool is_finished = false;
+    int currentTimex = -1;
+
     while (!is_finished)
     {
         /****************************************************/
@@ -376,9 +378,10 @@ int main(int argc, char *argv[])
         /***************************************************/
         
         do
-        {   //printf("Scheduler before receiving ..\n");
+        {   
+            //printf("Scheduler before receiving ..\n");
             rec_val = msgrcv(msgq1_id, &pbuff, sizeof(pbuff.num_of_processes) + sizeof(pbuff.all_sent) + sizeof(pbuff.process), 0, !IPC_NOWAIT);
-
+            
             if (rec_val == -1)
                 perror("Error in receiveing process from process generator\n");
             else
@@ -401,24 +404,24 @@ int main(int argc, char *argv[])
                 printf("Got out the add process\n");
                 }
             }
+            
 
         } while (num_of_processes - 1 > 0);
-
+        
        // printf("Calling the scheduler with algorithm =%d\n",algorithm);
         if(root != NULL) 
         {      
         scheduler(algorithm, quantum);
         }
+        
     }
-    int currentTime =  0;
+    currentTimex =  -1;
     while(root != NULL)
     {
-        if(currentTime != getClk())
-        {
-            currentTime = getClk();
-            scheduler(algorithm,quantum);
+         
+        
+     scheduler(algorithm,quantum);
 
-        }
     }
     
     clearResources();
@@ -438,93 +441,66 @@ void scheduler(int algorithm, int quantum)
    // struct PCB *(*getProperElement)(); 
    /* function pointer to select the algorithm */ 
     struct processBuffer pbuff;   /* buffer to send the process remaning time to the process.c */
-    printf("Iam in scheduler now .. %d\n",algorithm);
+    struct PCB* tempProcess;
+    int currentT=getClk();
     switch (algorithm)
     {
     case 1: /* FCFS */
-        globalrunningProcess = getProperFCFS();
+        tempProcess = getProperFCFS();
         break;
     case 2: /* SJF */
-        globalrunningProcess = getProperSJF();
+    
+        tempProcess = getProperSJF();
         break;
     case 3: /* HPF */
-        printf(" Root id = %d\n",root->id);
-
-        if(root != NULL)
-        {     
-              struct PCB* tempProcess = getProperHPF();
-                if(tempProcess != currentRunningProcess)
-                {   
-                    
-                    updateProcessData(currentRunningProcess);
-                    currentRunningProcess = tempProcess;
-
-                    
-                    if(currentRunningProcess->remainingTime == currentRunningProcess->runTime)
-                    {
-                        currentRunningProcess->startTime = getClk();
-                    }
-                    continueProcess(currentRunningProcess);   
-                }
-                currentRunningProcess->remainingTime--;
-                
-        }
+        tempProcess = getProperHPF();
         break;
 
-    default:
-        printf("Iam hereeeeeeeeeeeeeeeeeeeeeeeee\n");
+    case 4 :
+        tempProcess = getProperSRTN();
+        break;
+
+    case 5 :
+        tempProcess = getProperRR();
+        break;
+    default:  
+        break; 
 
     }
-    // struct PCB *runningProcess;
-    // int time;
-
-
-    // else
-    // {
-
-    //     runningProcess = getProperElement();
-    //     globalrunningProcess = runningProcess;
-
-    //     if (runningProcess != NULL)
-    //     {
-    //         runningProcess->state = 1;
-    //     }
-
-    //     //NOTE: this Could be loop
-    //     time = getClk();
-    //     struct PCB *tempProcess = getProperElement();
-    //     //printf("tempProcess %d\n", tempProcess->id);
-    //     if (runningProcess != tempProcess)
-    //     {
-    //         if (runningProcess != NULL)
-    //         {
-    //             runningProcess->state = 0;
-    //             processToFile(runningProcess);
-    //         }
-    //         runningProcess = tempProcess;
-    //         globalrunningProcess = runningProcess;
-    //         runningProcess->state = 1;
-    //     }
-    //     if (runningProcess != NULL)
-    //     {
-    //         runningProcess->remainingTime -= 1;
-    //         if (runningProcess->remainingTime == 0)
-    //         {
-    //             runningProcess->state = -1;
-    //             runningProcess->endTime = time;
-    //             processToFile(runningProcess);
-    //             runningProcess = NULL;
-    //         }
-    //     }
-    // }
-    // if (runningProcess != NULL)
-    // {
-    //     processToFile(runningProcess);
-    // }
-    // deleteFinishedProcesses(); //garbage collector
-    // while (time == getClk())
-    // {
-    // }
+    if(root != NULL)
+        {     
+            if(tempProcess != NULL)  printf("process id =%d\n",tempProcess->id);
+            if(currentRunningProcess != tempProcess)
+            {
+                if(currentRunningProcess != NULL)
+                {
+                    stopProcess(currentRunningProcess);
+                    printf(" state = %d\n",currentRunningProcess->state);
+                    processToFile(currentRunningProcess);
+                    
+                }
+                currentRunningProcess = tempProcess;
+                continueProcess(currentRunningProcess);
+            }
+            if(currentRunningProcess != NULL)
+            {
+                currentRunningProcess->remainingTime--;
+                if(currentRunningProcess->remainingTime == 0)
+                {
+                    stopProcess(currentRunningProcess);
+                    currentRunningProcess->endTime = getClk();
+                    processToFile(currentRunningProcess);
+                    currentRunningProcess = NULL;
+                }
+            }
+            if(currentRunningProcess != NULL)
+            {
+                processToFile(currentRunningProcess);
+            }
+            deleteFinishedProcesses();
+            
+        }
+        while(currentT == getClk());
 }
 void updateProcessData(struct PCB *currentProcess)
 {
@@ -549,22 +525,21 @@ void updateProcessData(struct PCB *currentProcess)
 
 void stopProcess(struct PCB *currentProcess)
 {
-  
-   processToFile(currentProcess);
+
    if(currentProcess->state != 0) {kill(currentProcess->pid, SIGSTOP);}
+   if(currentProcess->remainingTime != 0) currentProcess->state = 0;
+   else if (currentProcess->remainingTime == 0) currentProcess->state = -1;
    
-   currentProcess->state = 0;
    return;
 }
 
 void continueProcess(struct PCB *currentProcess)
 {
 
-
+   
    currentProcess->state = 1;
    kill(currentProcess->pid, SIGCONT);
-   processToFile(currentProcess);
-   
+   return;
    
 
 }
@@ -579,82 +554,3 @@ void clearResources()
 
 
 
-/* Testing .. */
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    // those for testing only
-    // quantum = 2, StartQuantum = getClk();
-    // struct PCB process2;
-    // process2.id = 2;
-    // process2.arrivalTime = 1;
-    // process2.totalTime = 3;
-    // process2.priority = 5;
-    // addProcess(process2);
-
-    // struct PCB process;
-    // process.id = 1;
-    // process.arrivalTime = 1;
-    // process.totalTime = 3;
-    // process.priority = 11;
-    // addProcess(process);
-
-    // struct PCB process3;
-    // process3.id = 3;
-    // process3.arrivalTime = 1;
-    // process3.totalTime = 3;
-    // process3.priority = 2;
-    // addProcess(process3);
-
-    // scheduler(5, quantum);
-    // scheduler(5, quantum);
-    // scheduler(5, quantum);
-    // printf("StartQuantum is %d and Quantum is %d\n", StartQuantum, quantum);
-
-    // scheduler(5, quantum);
-    // scheduler(5, quantum);
-    // scheduler(5, quantum);
-    // printf("StartQuantum is %d and Quantum is %d\n", StartQuantum, quantum);
-
-    // scheduler(5, quantum);
-    // scheduler(5, quantum);
-    // scheduler(5, quantum);
-    // printf("StartQuantum is %d and Quantum is %d\n", StartQuantum, quantum);
-
-    // case 4: /* SRTN */
-
-    //     // globalrunningProcess = getProperSRTN;
-    //     // struct PCB *runningProcess = getProperElement();
-    //     // if (runningProcess != NULL) {
-    //     //     runningProcess->state = 1;
-    //     // }
-    //     // //main loop
-    //     // while (thereIsProcess == 1 || root != NULL) {
-    //     //     clk++;
-    //     //     processGeneratorFunctionality();
-    //     //     int time = getClk();
-    //     //     struct PCB *tempProcess = getProperElement();
-    //     //     if (runningProcess != tempProcess) {
-    //     //         if (runningProcess != NULL) {
-    //     //             runningProcess->state = 0;
-    //     //             processToFile(runningProcess);
-    //     //         }
-    //     //         runningProcess = tempProcess;
-    //     //         runningProcess->state = 1;
-    //     //     }
-    //     //     if (runningProcess != NULL) {
-    //     //         runningProcess->remainingTime -= 1;
-    //     //         if (runningProcess->remainingTime == 0) {
-    //     //             runningProcess->state = -1;
-    //     //             runningProcess->endTime = time;
-    //     //             processToFile(runningProcess);
-    //     //             runningProcess = NULL;
-    //     //         }
-    //     //     }
-    //     //     if (runningProcess != NULL) {
-    //     //         processToFile(runningProcess);
-    //     //     }
-    //     //     deleteFinishedProcesses();  //garbage collector
-    //     // }
-    //     break;
-    // case 5:
-    //     globalrunningProcess = Test_RR;
-    //     break;
