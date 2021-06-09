@@ -485,6 +485,8 @@ void scheduler(int algorithm, int quantum)
             if(currentRunningProcess != NULL)
             {
                 currentRunningProcess->remainingTime--;
+                *rtAddr = currentRunningProcess->remainingTime;
+
                 if(currentRunningProcess->remainingTime == 0)
                 {
                     stopProcess(currentRunningProcess);
