@@ -23,8 +23,7 @@ typedef short bool;
                                        // TODO : add your helper macros here
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// #define SCHED_PROC_MSGQ_KEY 77         /* key for the message queue between scheduler and process */
-// #define PROC_SCHED_MSGQ_KEY 78         /* key for the message queue between process and scheduler */
+
 #define PROC_SCHED_SHARED_KEY 78 
 #define SCHED_GENERTOR_MSGQ_KEY 65     /* key for the message queue between scheduler and process generator */
 #define SEM_SCHED_PROC_KEY 77

@@ -258,8 +258,9 @@ int main(int argc, char *argv[])
       }
       else if (PROC_COUNT_AT_THIS_TIME == 0)
       {
-            //printf("Current time = %d\n",CURRENT_TIME);
+            
             pbuff.num_of_processes = PROC_COUNT_AT_THIS_TIME;
+            pbuff.process.id = -1;
             //printf("Process generator num of procs = %d\n",PROC_COUNT_AT_THIS_TIME);
             send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
             if (send_val == -1) {perror("Error in send the process to the scheduler.");}
