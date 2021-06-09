@@ -1,11 +1,11 @@
-
 #include "headers.h"
 #define MAX_CHAR_IN_LINE 255
 #define NUM_PROCESSES  
 
 void clearResources(int);
 //////////////////////////
-int msgq_up_id;
+int msgq_up_id, sem1;
+ union Semun semun;
 //////////////////////////
 
 int main(int argc, char *argv[])
@@ -156,6 +156,20 @@ int main(int argc, char *argv[])
     //////////////////////////////////////////////////////////////////////////////////////////////////////
                                               // TODO IPCS
     //////////////////////////////////////////////////////////////////////////////////////////////////////
+   
+    //*****************************//
+    key_t sem1_id = ftok("keyfile",SEM_SCHED_PROC_KEY);
+    
+
+    sem1 = semget(sem1_id, 1, 0666 | IPC_CREAT);
+    
+    
+    if (sem1 == -1 )
+    {
+        perror("Error in create sem");
+        exit(-1);
+    }
+
     key_t msg_id = ftok("keyfile", SCHED_GENERTOR_MSGQ_KEY);      
     msgq_up_id = msgget(msg_id, 0666 | IPC_CREAT);
 
@@ -199,21 +213,22 @@ int main(int argc, char *argv[])
     {   
       PROC_COUNT_AT_THIS_TIME = 0;
       /* for calculating the num of processes at the current time **/
-
+      //printf("clkkkkkkkkkkkkk = %d\n",getClk());
       if(CURRENT_TIME != getClk())  /* don't enter here unless the clock changed inorder not to sent same processes again */
       {    
         CURRENT_TIME = getClk();
-
+        //printf("Start counting ... idex = %d\n",INDEX);
         while(INDEX < num_of_processes && processes_array[INDEX].arrivalTime == CURRENT_TIME)
-        {
+        {   
+            
             PROC_COUNT_AT_THIS_TIME ++ ;
             INDEX ++;
         }
-
       }
       /* set all_sent b true if and only if the index reached the num of processes */
       pbuff.all_sent = (INDEX == num_of_processes)?true : false; 
-
+      
+      //printf("count of process at this time = %d , %d\n",CURRENT_TIME,PROC_COUNT_AT_THIS_TIME);
       /* for sending the processes at the current time to the scheduler */
       if(PROC_COUNT_AT_THIS_TIME != 0)
       {
@@ -222,6 +237,7 @@ int main(int argc, char *argv[])
            
         while(PROC_COUNT_AT_THIS_TIME > 0)
         {   
+            
             printf("\nProcess id is %d , arrival time = %d , runtime = %d , priority = %d  \n", //TODO for test only
             processes_array[INDEX].id,processes_array[INDEX].arrivalTime,
             processes_array[INDEX].runTime,processes_array[INDEX].priority);
@@ -232,7 +248,7 @@ int main(int argc, char *argv[])
             pbuff.process.priority = processes_array[INDEX].priority;
             
             pbuff.num_of_processes = PROC_COUNT_AT_THIS_TIME;
-
+            printf("Process generator num of procs = %d\n",PROC_COUNT_AT_THIS_TIME);
             send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
             if (send_val == -1) {perror("Error in send the process to the scheduler.");}
 
@@ -240,7 +256,15 @@ int main(int argc, char *argv[])
             
         }
       }
-
+      else if (PROC_COUNT_AT_THIS_TIME == 0)
+      {
+            //printf("Current time = %d\n",CURRENT_TIME);
+            pbuff.num_of_processes = PROC_COUNT_AT_THIS_TIME;
+            //printf("Process generator num of procs = %d\n",PROC_COUNT_AT_THIS_TIME);
+            send_val = msgsnd(msgq_up_id, &pbuff, sizeof(pbuff.num_of_processes)+sizeof(pbuff.all_sent)+sizeof(pbuff.process), !IPC_NOWAIT);
+            if (send_val == -1) {perror("Error in send the process to the scheduler.");}
+      }
+    
       if(INDEX == num_of_processes && pbuff.all_sent) break ;   /* all processes sent to the scheduler */
 
     }
@@ -249,6 +273,7 @@ int main(int argc, char *argv[])
     //* 7. Clear clock resources
     ////////////////////////////
     //TODO *****ask****** ???  /* do that when the scheduler finishes? */
+    down(sem1);
     destroyClk(true);
 
 }
@@ -258,5 +283,7 @@ void clearResources(int signum)
     destroyClk(true);
     //TODO Clears all resources in case of interruption
     msgctl(msgq_up_id, IPC_RMID, (struct msqid_ds *)0);
+    semctl(sem1, 0, IPC_RMID, semun);
+
     exit(0);
 }

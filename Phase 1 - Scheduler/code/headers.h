@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <string.h> // for strtok function.
 
+
 typedef short bool;
 #define true 1
 #define false 0
@@ -22,8 +23,11 @@ typedef short bool;
                                        // TODO : add your helper macros here
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define SCHED_PROC_MSGQ_KEY 77         /* key for the message queue between scheduler and process */
+// #define SCHED_PROC_MSGQ_KEY 77         /* key for the message queue between scheduler and process */
+// #define PROC_SCHED_MSGQ_KEY 78         /* key for the message queue between process and scheduler */
+#define PROC_SCHED_SHARED_KEY 78 
 #define SCHED_GENERTOR_MSGQ_KEY 65     /* key for the message queue between scheduler and process generator */
+#define SEM_SCHED_PROC_KEY 77
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +65,45 @@ struct processBuffer                /*for sending the processes at specific inst
     
 };
 //////////////////////////////////
+union Semun
+{
+    int val;               /* value for SETVAL */
+    struct semid_ds *buf;  /* buffer for IPC_STAT & IPC_SET */
+    ushort *array;         /* array for GETALL & SETALL */
+    struct seminfo *__buf; /* buffer for IPC_INFO */
+    void *__pad;
+};
+//************************//
+void down(int sem)
+{
+    struct sembuf p_op;
 
+    p_op.sem_num = 0;
+    p_op.sem_op = -1;
+    p_op.sem_flg = !IPC_NOWAIT;
+
+    if (semop(sem, &p_op, 1) == -1)
+    {
+        perror("\nI'm the client, I faced an error in down()");
+        exit(-1);
+    }
+}
+//************************//
+void up(int sem)
+{
+    struct sembuf v_op;
+
+    v_op.sem_num = 0;
+    v_op.sem_op = 1;
+    v_op.sem_flg = !IPC_NOWAIT;
+
+    if (semop(sem, &v_op, 1) == -1)
+    {
+        perror("\nI'm the client, I faced an error in up()");
+        exit(-1);
+    }
+}
+/**********************************/
 ///==============================
 //don't mess with this variable//
 int *shmaddr; //
