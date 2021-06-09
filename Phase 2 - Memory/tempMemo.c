@@ -1,4 +1,5 @@
 #include <stdlib.h>
+
 #include "stdio.h"
 
 struct PCB {
@@ -18,8 +19,7 @@ struct PCB {
     int memoSize;
     int startAddress;  //-1->if not assigned
 };
-struct PCB *waitingQueueHead = NULL;
-struct PCB *waitingQueueTail = NULL;
+
 struct memoryBlock {
     int state;                      //0->empty,1->full
     int start;                      //start address
@@ -27,13 +27,21 @@ struct memoryBlock {
     struct memoryBlock *nextBlock;  //next memory block
 };
 
-struct memoryBlock *root;    //this pointer to first segment in memory
+struct memoryBlock *root;  //this pointer to first segment in memory
 
 struct memoryBlock *memory;  //this pointer to first empty segment in memory (neded for Last Fit)
 
-struct memoryBlock *waitingList = NULL;
+struct PCB *waitingListHead = NULL;
 
-struct memoryBlock *waitingListTail = NULL;
+struct PCB *waitingListTail = NULL;
+
+void enQueue(struct PCB *processe) {
+    if (waitingListHead == NULL) {
+        waitingListHead = waitingListTail = processe;
+        return;
+    }
+    waitingListTail->nextProcess = processe;
+}
 
 void initMemory() {
     root = memory = (struct memoryBlock *)malloc(sizeof(struct memoryBlock));
@@ -65,38 +73,6 @@ void freeMemory(int start) {  // it set to specific memory segment 0 (empty seg.
             checkNeighboring();
             return;
         }
-        currentBlock = currentBlock->nextBlock;
-    }
-}
-
-void freeMemory_Buddy(int start) {
-    struct memoryBlock *currentBlock = root;
-    while (currentBlock != NULL) {
-        if (currentBlock->start == start) {
-            currentBlock->state = 0;
-            break;
-        }
-    }
-    currentBlock = root;
-    struct memoryBlock *lastBlock;
-    while (currentBlock != NULL) {
-        if (currentBlock->state == 0) {
-            if (currentBlock->start % 2 == 0 && currentBlock->nextBlock != NULL && currentBlock->nextBlock->state == 0) {
-                currentBlock->size *= 2;
-                struct memoryBlock *tempNext = currentBlock->nextBlock;
-                currentBlock->nextBlock = tempNext->nextBlock;
-                free(tempNext);
-                freeMemory_Buddy(currentBlock->start);
-            } else if (currentBlock->start % 2 == 1 && lastBlock->state == 0) {
-                lastBlock->size *= 2;
-                struct memoryBlock *tempNext = currentBlock;
-                lastBlock->nextBlock = tempNext->nextBlock;
-                free(tempNext);
-                freeMemory_Buddy(lastBlock->start);
-            }
-            return;
-        }
-        lastBlock = currentBlock;
         currentBlock = currentBlock->nextBlock;
     }
 }
@@ -237,30 +213,28 @@ int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->a
 
 int main() {
     initMemory();
-    struct PCB *coming_process;  
+    struct PCB *coming_process;
     /*assign the process*/
     struct memoryBlock *for_new_process;
     /*assign memory for new process*/
 
     // assigning process to waiting list
-    if(waitingList == NULL)
-    waitingList = waitingListTail = for_new_process;
-    else{
-        waitingListTail -> nextBlock = for_new_process;
-        waitingListTail = waitingListTail->nextBlock;
-    }
-    
-    // run process from waiting list
-    if(waitingList != NULL)
-    {
-        int result;// = /*run needed algorithm with size = waitingList -> size*/
-        if(result != -1)
-        {
-            struct memoryBlock *temp = waitingList;
-            waitingList = waitingList->nextBlock;
-            free(temp);
-        }
-    }
+        // if (waitingList == NULL)
+        //     waitingList = waitingListTail = for_new_process;
+        // else {
+        //     waitingListTail->nextBlock = for_new_process;
+        //     waitingListTail = waitingListTail->nextBlock;
+        // }
+
+        // // run process from waiting list
+        // if (waitingList != NULL) {
+        //     int result;  // = /*run needed algorithm with size = waitingList -> size*/
+        //     if (result != -1) {
+        //         struct memoryBlock *temp = waitingList;
+        //         waitingList = waitingList->nextBlock;
+        //         free(temp);
+        //     }
+        // }
 
     /* for Mohammed this test case failing (is it impossible case?)
     Buddy_System_Allocation(5);
