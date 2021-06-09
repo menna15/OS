@@ -25,13 +25,26 @@ int main(int agrc, char *argv[])
     remainingtime = *(int*)rtAddr;
     while (remainingtime > 0)
     {
-        // remainingtime = ??;
-        while(curTime==getClk()); //remaining time decreases when the clock changes;
-        *rtAddr--;
-        curTime=getClk();
         remainingtime = *rtAddr;
     }
+
+    if(remainingtime == 0)
+    {
+       exit(0);
+    }
+
     destroyClk(false);
 
     return 0;
 }
+
+
+
+
+
+
+    /* // remainingtime = ??;
+        // while(curTime==getClk()); //remaining time decreases when the clock changes;
+        // *rtAddr--;
+        // curTime=getClk();
+        */
