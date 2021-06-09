@@ -1,5 +1,4 @@
 #include <stdlib.h>
-
 #include "stdio.h"
 
 struct PCB {
@@ -26,8 +25,15 @@ struct memoryBlock {
     int size;                       //size of the block
     struct memoryBlock *nextBlock;  //next memory block
 };
+
 struct memoryBlock *root;    //this pointer to first segment in memory
+
 struct memoryBlock *memory;  //this pointer to first empty segment in memory (neded for Last Fit)
+
+struct memoryBlock *waitingList = NULL;
+
+struct memoryBlock *waitingListTail = NULL;
+
 void initMemory() {
     root = memory = (struct memoryBlock *)malloc(sizeof(struct memoryBlock));
     memory->state = 0;
@@ -35,6 +41,7 @@ void initMemory() {
     memory->size = 1024;
     memory->nextBlock = NULL;
 }
+
 void checkNeighboring()  // if there is neighbors segments empty then it will merge them
 {
     struct memoryBlock *currentBlock = root;
@@ -60,6 +67,7 @@ void freeMemory(int start) {  // it set to specific memory segment 0 (empty seg.
         currentBlock = currentBlock->nextBlock;
     }
 }
+
 int allocateMemory(int start, int size, struct memoryBlock *currentBlock) { /*-1->no memory avalible, 0->the operation has done*/
     if (currentBlock != NULL) {                                             // while isn't needed
         if (currentBlock->start == start) {
@@ -92,6 +100,7 @@ int allocateMemory(int start, int size, struct memoryBlock *currentBlock) { /*-1
     }
     return -1;
 }
+
 int FirstFit(int size) {  //-1->if not avalible, start address->avalible
     struct memoryBlock *currentBlock = root;
     while (currentBlock != NULL) {
@@ -133,6 +142,7 @@ int BestFit(int size) {  //-1->if not avalible, start address->avalible
     }
     return -1;
 }
+
 int nearestPowerOfTwo(int size) {  //helpler to Buddy_System_Allocation
     if (256 < size && size <= 1024) {
         return 1024;
@@ -156,6 +166,7 @@ int nearestPowerOfTwo(int size) {  //helpler to Buddy_System_Allocation
         return 1;
     }
 }
+
 int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->avalible
     struct memoryBlock *currentBlock = root;
     while (currentBlock != NULL) {
@@ -190,23 +201,48 @@ int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->a
 //     }
 //     return;
 // }
+
 int main() {
     initMemory();
+    struct PCB *coming_process;  
+    /*assign the process*/
+    struct memoryBlock *for_new_process;
+    /*assign memory for new process*/
 
-    /* for testing 
-    FirstFit(5);
+    // assigning process to waiting list
+    if(waitingList == NULL)
+    waitingList = waitingListTail = for_new_process;
+    else{
+        waitingListTail -> nextBlock = for_new_process;
+        waitingListTail = waitingListTail->nextBlock;
+    }
+    
+    // run process from waiting list
+    if(waitingList != NULL)
+    {
+        int result;// = /*run needed algorithm with size = waitingList -> size*/
+        if(result != -1)
+        {
+            struct memoryBlock *temp = waitingList;
+            waitingList = waitingList->nextBlock;
+            free(temp);
+        }
+    }
+
+    /* for Mohammed this test case failing (is it impossible case?)
+    Buddy_System_Allocation(5);
     Print_memo();
     printf("\n");
-    FirstFit(20);
+    Buddy_System_Allocation(20);
     Print_memo();
     printf("\n");
     freeMemory(0);
     Print_memo();
     printf("\n");
-    FirstFit(996);
+    Buddy_System_Allocation(996);
     Print_memo();
     printf("\n");
-    FirstFit(5);
+    Buddy_System_Allocation(5);
     Print_memo();
     printf("\n");
 */
