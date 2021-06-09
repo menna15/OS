@@ -19,7 +19,8 @@ struct PCB {
     int memoSize;
     int startAddress;  //-1->if not assigned
 };
-
+struct PCB *waitingQueueHead = NULL;
+struct PCB *waitingQueueTail = NULL;
 struct memoryBlock {
     int state;                      //0->empty,1->full
     int start;                      //start address
@@ -60,6 +61,39 @@ void freeMemory(int start) {  // it set to specific memory segment 0 (empty seg.
         currentBlock = currentBlock->nextBlock;
     }
 }
+
+void freeMemory_Buddy(int start) {
+    struct memoryBlock *currentBlock = root;
+    while (currentBlock != NULL) {
+        if (currentBlock->start == start) {
+            currentBlock->state = 0;
+            break;
+        }
+    }
+    currentBlock = root;
+    struct memoryBlock *lastBlock;
+    while (currentBlock != NULL) {
+        if (currentBlock->state == 0) {
+            if (currentBlock->start % 2 == 0 && currentBlock->nextBlock != NULL && currentBlock->nextBlock->state == 0) {
+                currentBlock->size *= 2;
+                struct memoryBlock *tempNext = currentBlock->nextBlock;
+                currentBlock->nextBlock = tempNext->nextBlock;
+                free(tempNext);
+                freeMemory_Buddy(currentBlock->start);
+            } else if (currentBlock->start % 2 == 1 && lastBlock->state == 0) {
+                lastBlock->size *= 2;
+                struct memoryBlock *tempNext = currentBlock;
+                lastBlock->nextBlock = tempNext->nextBlock;
+                free(tempNext);
+                freeMemory_Buddy(lastBlock->start);
+            }
+            return;
+        }
+        lastBlock = currentBlock;
+        currentBlock = currentBlock->nextBlock;
+    }
+}
+
 int allocateMemory(int start, int size, struct memoryBlock *currentBlock) { /*-1->no memory avalible, 0->the operation has done*/
     if (currentBlock != NULL) {                                             // while isn't needed
         if (currentBlock->start == start) {
