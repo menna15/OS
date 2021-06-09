@@ -58,6 +58,7 @@ void addProcess(struct PCB processeObj)
     tail->nextProcess = processe;
     tail = processe;
     }
+    
     int pid = fork();
     if(pid == -1) perror("Error while trying to fork the new received process");
     else if (pid == 0) {execl("process.out","process","-f",NULL);}
@@ -328,7 +329,11 @@ int main(int argc, char *argv[])
         exit(-1);
     }
     rtAddr =(int*)shmat(shem_id, (void *)0, 0);
-
+    if (rtAddr == NULL)
+    {
+        perror("Error in attach the shared memory in the scheduler");
+        exit(-1);
+    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     //* (3). start the communication between process generator and the scheduler  == message queue.
@@ -400,14 +405,22 @@ int main(int argc, char *argv[])
         } while (num_of_processes - 1 > 0);
 
        // printf("Calling the scheduler with algorithm =%d\n",algorithm);
-        if(root != NULL) scheduler(algorithm, quantum);
+        if(root != NULL) 
+        {      
+        scheduler(algorithm, quantum);
+        }
     }
+    int currentTime =  0;
+    while(root != NULL)
+    {
+        if(currentTime != getClk())
+        {
+            currentTime = getClk();
+            scheduler(algorithm,quantum);
 
-    // /*to continue after getting all the processes*/
-    // while (root != NULL) {
-    //     printf("Stuck here\n");
-    //     //scheduler(algorithm, quantum);
-    // }
+        }
+    }
+    
     clearResources();
     up(sem1);
     
@@ -436,25 +449,28 @@ void scheduler(int algorithm, int quantum)
         break;
     case 3: /* HPF */
         printf(" Root id = %d\n",root->id);
+
         if(root != NULL)
         {     
               struct PCB* tempProcess = getProperHPF();
-              if(tempProcess != currentRunningProcess)
+                if(tempProcess != currentRunningProcess)
                 {   
-                    printf("stuckkk time =%d\n",tempProcess->remainingTime);
-                    currentRunningProcess = tempProcess;
+                    
                     updateProcessData(currentRunningProcess);
-                    printf("entered here\n");
+                    currentRunningProcess = tempProcess;
+
+                    
                     if(currentRunningProcess->remainingTime == currentRunningProcess->runTime)
                     {
                         currentRunningProcess->startTime = getClk();
                     }
                     continueProcess(currentRunningProcess);   
                 }
-                else break;
-          
+                currentRunningProcess->remainingTime--;
+                
         }
         break;
+
     default:
         printf("Iam hereeeeeeeeeeeeeeeeeeeeeeeee\n");
 
@@ -512,18 +528,21 @@ void scheduler(int algorithm, int quantum)
 }
 void updateProcessData(struct PCB *currentProcess)
 {
-    printf("stuckkk time =%d\n",currentProcess->remainingTime);
-    if(currentProcess->remainingTime == 0)
-    {
-        
-        currentProcess->state = -1;
-        currentProcess->endTime = getClk();
-        currentProcess->totalTime = currentProcess->endTime - currentProcess->startTime ;
-        deleteProcess(currentProcess);
-         
-    }
-    
-    stopProcess(currentProcess);
+    if(currentProcess != NULL)
+    {   printf("stuckkk time =%d\n",currentProcess->remainingTime);
+        if(currentProcess->remainingTime == 0)
+        {
+            
+            currentProcess->state = -1;
+            currentProcess->endTime = getClk();
+            currentProcess->totalTime = currentProcess->endTime - currentProcess->startTime ;
+            processToFile(currentProcess);
+            deleteProcess(currentProcess);
+            
+        }
+
+        else {stopProcess(currentProcess);}
+        }
     return;
     
 }
@@ -532,8 +551,7 @@ void stopProcess(struct PCB *currentProcess)
 {
   
    processToFile(currentProcess);
-   if(currentProcess->state != 0) kill(currentProcess->pid, SIGSTOP);
-   if(currentProcess->remainingTime != currentProcess->runTime) currentProcess->remainingTime=(*rtAddr);
+   if(currentProcess->state != 0) {kill(currentProcess->pid, SIGSTOP);}
    
    currentProcess->state = 0;
    return;
@@ -542,10 +560,12 @@ void stopProcess(struct PCB *currentProcess)
 void continueProcess(struct PCB *currentProcess)
 {
 
-  *rtAddr = currentProcess->remainingTime;
-   processToFile(currentProcess);
-   kill(currentProcess->pid, SIGCONT);
+
    currentProcess->state = 1;
+   kill(currentProcess->pid, SIGCONT);
+   processToFile(currentProcess);
+   
+   
 
 }
 void clearResources()
