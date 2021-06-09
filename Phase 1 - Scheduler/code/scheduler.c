@@ -37,8 +37,9 @@ int processNum = 1;
 int thereIsProcess = 1;
 int count = 0;
 float All_WTA=0;
-float All_Waiting = 0;
+float All_time = 0;
 float All_running = 0;
+float All_waiting = 0;
 float CPU =0;
 /************************************************************************************/
 void addProcess(struct PCB processeObj) {
@@ -52,6 +53,7 @@ void addProcess(struct PCB processeObj) {
     processe->priority = processeObj.priority;
     processe->endTime = 0;
     processe->state = 0;
+    processe->runTime = processeObj.runTime;;
     processe->nextProcess = NULL;
     All_running += processeObj.runTime;
     if (root == NULL) {
@@ -104,7 +106,8 @@ void deleteFinishedProcesses() {
         toDelete = currentProcess;
         currentProcess = currentProcess->nextProcess;
         if (toDelete->state == -1) {
-            All_Waiting += toDelete->waiting;
+            All_waiting += toDelete->waiting;
+            All_time += toDelete->waiting+toDelete->runTime;
             All_WTA += toDelete->WAT;
             deleteProcess(toDelete);
         }
@@ -390,9 +393,9 @@ int main(int argc, char *argv[]) {
     }
     FILE *schedulerperf = fopen("scheduler.perf", "a");
     
-    fprintf(schedulerperf, "CPU Utilization =\t%.2f %\n",((All_running - All_Waiting)/All_running)*100 );
+    fprintf(schedulerperf, "CPU Utilization =\t%.2f%\n",(All_running)/All_time*100 );
     fprintf(schedulerperf, "Avg WTA =\t%.2f\n",(All_WTA/processNum));
-    fprintf(schedulerperf, "Avg Waiting =\t%.2f\n",(All_Waiting/processNum));
+    fprintf(schedulerperf, "Avg Waiting =\t%.2f\n",(All_waiting/processNum));
     fclose(schedulerperf);
 
     clearResources();
