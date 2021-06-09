@@ -19,10 +19,13 @@ struct PCB {
     int state;    /* -1 -> finished, 0 -> stopped, 1 -> running */
     int runTime;
     int startTime;
+    int waiting;
+    int WAT;
     struct PCB *nextProcess;
     /* waiting time = endTime-arrivalTime-totalTime */
     /* running time=getClk()-arrivalTime         */
     /* Turnaround time = endTime - arrivalTime */
+    /* Weighted Time = turnaround / total time;
     /* BurstTime = runTime = totalTime */
 };
 /************ Globals ******************************/
@@ -33,6 +36,10 @@ struct PCB *currentRunningProcess = NULL;
 int processNum = 1;
 int thereIsProcess = 1;
 int count = 0;
+float All_WTA=0;
+float All_Waiting = 0;
+float All_running = 0;
+float CPU =0;
 /************************************************************************************/
 void addProcess(struct PCB processeObj) {
     //create PCB object with the parameters you like and pass it to the function to add it to the process table
@@ -46,6 +53,7 @@ void addProcess(struct PCB processeObj) {
     processe->endTime = 0;
     processe->state = 0;
     processe->nextProcess = NULL;
+    All_running += processeObj.runTime;
     if (root == NULL) {
         root = processe;
         tail = root;
@@ -96,6 +104,8 @@ void deleteFinishedProcesses() {
         toDelete = currentProcess;
         currentProcess = currentProcess->nextProcess;
         if (toDelete->state == -1) {
+            All_Waiting += toDelete->waiting;
+            All_WTA += toDelete->WAT;
             deleteProcess(toDelete);
         }
     }
@@ -110,31 +120,44 @@ void processToFile(struct PCB *processe) {
             waitingTime = 0;
         }
         int turnArroundTime = processe->endTime - processe->arrivalTime;
+        
+
         float weightedTurnArroundTime = (float)turnArroundTime / processe->totalTime;
+        processe->WAT =weightedTurnArroundTime;
+        
+        processe->waiting = waitingTime;
         fprintf(schedulerLog, "At time\t%d\tprocess\t%d\tfinished\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA\t%d\tWTA\t%.2f\n", time, processe->id, processe->arrivalTime, processe->totalTime, processe->remainingTime, waitingTime, turnArroundTime, weightedTurnArroundTime);
-    } else if (processe->state == 0) {  //stopped
+    } 
+    else if (processe->state == 0) {  //stopped
         int time = getClk();
         int waitingTime = time - processe->arrivalTime - (processe->totalTime - processe->remainingTime);
+        
         if (waitingTime < 0) {
             waitingTime = 0;
         }
+        processe->waiting = waitingTime;
         fprintf(schedulerLog, "At time\t%d\tprocess\t%d\tstopped\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", time, processe->id, processe->arrivalTime, processe->totalTime, processe->remainingTime, waitingTime);
-    } else if (processe->state == 1 && (processe->totalTime - 1 == processe->remainingTime)) {  //started
+    } 
+    else if (processe->state == 1 && (processe->totalTime - 1 == processe->remainingTime)) {  //started
         int time = getClk();
         int waitingTime = time - processe->arrivalTime - (processe->totalTime - processe->remainingTime);
         if (waitingTime < 0) {
             waitingTime = 0;
         }
+        processe->waiting = waitingTime;
         fprintf(schedulerLog, "At time\t%d\tprocess\t%d\tstarted\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", time, processe->id, processe->arrivalTime, processe->totalTime, processe->remainingTime, waitingTime);
-    } else {
+    } 
+    else {
         int time = getClk();
         int waitingTime = time - processe->arrivalTime - (processe->totalTime - processe->remainingTime);
         if (waitingTime < 0) {
             waitingTime = 0;
         }
+        processe->waiting = waitingTime;
         fprintf(schedulerLog, "At time\t%d\tprocess\t%d\tresumed\t\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", time, processe->id, processe->arrivalTime, processe->totalTime, processe->remainingTime, waitingTime);
     }
     fclose(schedulerLog);
+
 }
 /**********************************************************************************************************************/
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -365,6 +388,12 @@ int main(int argc, char *argv[]) {
             changeClockFlag = 1;
         };
     }
+    FILE *schedulerperf = fopen("scheduler.perf", "a");
+    
+    fprintf(schedulerperf, "CPU Utilization =\t%.2f %\n",((All_running - All_Waiting)/All_running)*100 );
+    fprintf(schedulerperf, "Avg WTA =\t%.2f\n",(All_WTA/processNum));
+    fprintf(schedulerperf, "Avg Waiting =\t%.2f\n",(All_Waiting/processNum));
+    fclose(schedulerperf);
 
     clearResources();
     up(sem1);

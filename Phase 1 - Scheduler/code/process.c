@@ -30,6 +30,7 @@ int main(int agrc, char *argv[])
 
     if(remainingtime == 0)
     {
+       printf("Process with pid = %d terminated",getpid());
        exit(0);
     }
 
@@ -38,13 +39,3 @@ int main(int agrc, char *argv[])
     return 0;
 }
 
-
-
-
-
-
-    /* // remainingtime = ??;
-        // while(curTime==getClk()); //remaining time decreases when the clock changes;
-        // *rtAddr--;
-        // curTime=getClk();
-        */
