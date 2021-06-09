@@ -222,7 +222,7 @@ int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->a
             }
             if (currentBlock->size == roundedSize) {
                 allocateMemory(currentBlock->start, currentBlock->size, currentBlock);
-                return 0;
+                return currentBlock->start;
             }
         }
         currentBlock = currentBlock->nextBlock;
@@ -230,16 +230,15 @@ int Buddy_System_Allocation(int size) {  //-1->if not avalible, start address->a
     return -1;
 }
 
-// void Print_memo() for testing
-// {
-//     struct memoryBlock *currentBlock = root;
-//     while (currentBlock != NULL)
-//     {
-//         printf("start -> %d, size -> %d, and state -> %d\n", currentBlock->start, currentBlock->size, currentBlock->state);
-//         currentBlock = currentBlock -> nextBlock;
-//     }
-//     return;
-// }
+void Print_memo()  //for testing
+{
+    struct memoryBlock *currentBlock = root;
+    while (currentBlock != NULL) {
+        printf("start -> %d, size -> %d, and state -> %d\n", currentBlock->start, currentBlock->size, currentBlock->state);
+        currentBlock = currentBlock->nextBlock;
+    }
+    return;
+}
 
 int main() {
     initMemory();
@@ -266,14 +265,13 @@ int main() {
     //     }
     // }
 
-    /* for Mohammed this test case failing (is it impossible case?)
     Buddy_System_Allocation(5);
     Print_memo();
     printf("\n");
     Buddy_System_Allocation(20);
     Print_memo();
     printf("\n");
-    freeMemory(0);
+    freeMemory_Buddy(0);
     Print_memo();
     printf("\n");
     Buddy_System_Allocation(996);
@@ -282,5 +280,4 @@ int main() {
     Buddy_System_Allocation(5);
     Print_memo();
     printf("\n");
-*/
 }
