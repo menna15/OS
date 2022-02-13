@@ -1,4 +1,4 @@
-### :desktop_computer: OS
+### :desktop_computer: SIGMA-OS
 Full operating system simulation for the scheduler and memory systems.
 
 
