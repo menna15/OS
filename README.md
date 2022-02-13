@@ -1,5 +1,5 @@
 ### :desktop_computer: OS
-Full operating system for the scheduler and memory systems.
+Full operating system simulation for the scheduler and memory systems.
 
 
 ### :fountain_pen: Five scheduling algorithims:
